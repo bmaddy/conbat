@@ -1,0 +1,17 @@
+.clear {
+  clear: both;
+}
+.board {
+  border: solid black 1px;
+  float: left;
+}
+.row {
+  clear: left;
+  float: left;
+  height: 5px;
+}
+.cell {
+  float: left;
+  width: 5px;
+  height: 5px;
+}
