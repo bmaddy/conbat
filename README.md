@@ -1,10 +1,13 @@
 # conbat
 
-A Clojure library designed to ... well, that part is up to you.
+A multiplayer Conway's Game of Life battle.
 
 ## Usage
 
-FIXME
+* install node
+* $ lein cljsbuild once
+* $ node main.js
+* $ open http://localhost:1337
 
 ## License
 
