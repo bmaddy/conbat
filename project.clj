@@ -9,12 +9,15 @@
                  [domina "1.0.1"]
                  [org.clojure/google-closure-library-third-party "0.0-2029"]]
   :plugins [[lein-cljsbuild "0.3.0"]]
-  :cljsbuild {:builds [{:source-paths ["src-node"]
+  :cljsbuild {:builds [{:source-paths ["src-node" "src-shared"]
                         :compiler {:target :nodejs
                                    :output-to "main.js"
                                    :optimizations :simple
+                                   ;:optimizations :advanced
                                    :pretty-print true}}
-                       {:source-paths ["src"]
+                       {:source-paths ["src" "src-shared"]
                         :compiler {:output-to "ui.js"
                                    :optimizations :simple
                                    :pretty-print true}}]})
+                                   ;:optimizations :advanced}}]})
+

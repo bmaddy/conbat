@@ -3,7 +3,7 @@
   (:require [c2.core :refer [unify merge!]]
             [c2.scale :as scale]
             [c2.event :as event]
-            ;[conbat.core :as c]
+            [conbat.core :as c]
             [domina :as d]
             [domina.css :as css]
             [domina.events :as devent]
@@ -11,28 +11,16 @@
             [goog.net.XhrIo :as xhr]
             [clojure.set :as set]))
 
-(def board-dimensions [100 100])
+(def state (atom #{}))
+(def players (atom {}))
+(def displayed-state (atom #{}))
 
-(defn neighbors [[[x y] player]]
-  (for [dx [-1 0 1] dy (if (zero? dx) [-1 1] [-1 0 1])
-        :let [x-pos (mod (+ x dx) (board-dimensions 0))
-              y-pos (mod (+ y dy) (board-dimensions 1))]]
-    [[x-pos y-pos] player]))
-(def neighbors-memo (memoize neighbors))
-
-(defn step [cells]
-  (into {} (for [[loc nearby] (group-by first (mapcat neighbors-memo cells))
-                 :let [names (set/map-invert
-                               (frequencies
-                                 (conj (map second nearby) (cells loc))))]
-                 :when (and (or (contains? names 4)
-                                (contains? names 3)
-                                (contains? names 2))
-                            (or (= (count nearby) 3)
-                                (and (= (count nearby) 2)
-                                     (cells loc))))]
-             [loc (or (names 4) (names 3) (names 2))])))
-
+(def stamp-dimensions [[-3 4] [-3 4]])
+(def stamp (atom #{[0 -1]
+                   [1 0]
+                   [-1 1]
+                   [0 1]
+                   [1 1]}))
 
 (defn get-server-state [state]
   (goog.net.XhrIo/send "/state"
@@ -42,7 +30,8 @@
                              (d/log "Error: empty response from server.")
                              (let [r (cljs.reader/read-string resp)]
                                (d/log "Server state: " r)
-                               (reset! state r)))))))
+                               (reset! state (r :state))
+                               (reset! players (r :players))))))))
 
 (defn update-server-state! [points]
   (goog.net.XhrIo/send "/update"
@@ -69,34 +58,52 @@
 (declare game-loop)
 (defn game-loop [state displayed-state]
   (if @running
-    (swap! state step))
+    (swap! state c/step))
   (reset! displayed-state @state)
   (js/setTimeout #(game-loop state displayed-state) 50))
 
-(def state (atom #{}))
-(def displayed-state (atom #{}))
+(defn make-board-data [[xs ys] f]
+  (for [x xs]
+    (for [y ys]
+      [[x y] (f [x y])])))
 
-(defn view [state]
-  (for [x (range 0 (board-dimensions 0))]
-    (for [y (range 0 (board-dimensions 1))]
-      [[x y] (state [x y])])))
+(defn get-colors [state]
+  (make-board-data [(range 0 (first c/board-dimensions))
+                    (range 0 (second c/board-dimensions))]
+                   (fn [pos]
+                     (let [player (state pos)]
+                       (if player
+                         (-> @players player :color)
+                         :white)))))
 
-(defn ui [state]
+(defn get-stamp-colors [stamp]
+  (make-board-data (map #(apply range %) stamp-dimensions)
+                   (fn [pos]
+                     (if (stamp pos)
+                       :black
+                       :white))))
+
+(defn make-board [colors _]
   [:div.board
-   (for [row (view @state)]
+   (for [row colors]
      [:div.row
       (unify row
-             (fn [[[x y] player]]
+             (fn [[[x y] color]]
                [:div.cell
                 {:data [x y]
-                 :style {:backgroundColor (if player :black :white)}} ""]))])
+                 :style {:backgroundColor color}} ""]))])
    [:div.clear]])
 
-(def stamp (atom [[0 -1]
-                  [1 0]
-                  [-1 1]
-                  [0 1]
-                  [1 1]]))
+; The svg version doesn't seem to be faster
+(defn make-svg-board [colors size]
+  [:svg {:width (* size (count (first colors))) :height (* size (count colors))}
+   (unify (apply concat colors)
+          (fn [[[x y] color]]
+            [:rect.cell {:data (str [x y])
+                         :x (* size x) :y (* size y)
+                         :width size :height size
+                         :fill color}]))
+   [:div.clear]])
 
 (defn translate-points [move points]
   (map (partial map +) (repeat move) points))
@@ -111,27 +118,44 @@
     (swap! displayed-state merge named-points)))
 
 ; TODO
-; * have a display state that updates to the internal state once each game tick so we aren't
-; redrawing the screen for every little update
-; * add colors for different hosts
-; * add leaderboard
-; * add stamp builder
-; * add name entry
 ; * improve performance
+; * add name entry
 
-(defn init [data]
+(defn ^:export init [data]
   (reset! ip (.-ip data))
 
-  (bind! "#main"
-         [:div#main
+  (bind! "#game-board"
+         [:div#game-board
           [:h2 "Conbat"]
-          (ui displayed-state)])
+          (make-board (get-colors @displayed-state) 5)])
 
-  (event/on "#main" ".cell" :click
+  (bind! "#stamp-board"
+         [:div#stamp-board
+          [:h3 "Stamp configuration"]
+          (make-board (get-stamp-colors @stamp) 20)
+          [:div.clear]])
+
+  (bind! "#leader-board"
+         [:div#leader-board
+          [:h3 "Leader board"]
+          [:ol
+           (unify (reverse (sort-by :score (vals @players)))
+                  (fn [{:keys [name score color]}]
+                    [:li
+                     [:span
+                      [:div.name name]
+                      [:div.score score]]]))]])
+           
+  (event/on "#game-board" ".cell" :click
             (fn [[pos _]]
               (let [points (translate-points pos @stamp)]
                 (stamp-board! points)
                 (update-server-state! points))))
+
+  (event/on "#stamp-board" ".cell" :click
+            (fn [[pos _]]
+              (let [op (if (@stamp pos) disj conj)]
+                (swap! stamp op pos))))
 
   (game-loop state displayed-state)
   (update-state-loop state)

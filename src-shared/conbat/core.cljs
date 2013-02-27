@@ -13,8 +13,6 @@
 (defn neighbors-with-player [[pos player]]
   (map #(vector % player) (apply neighbors pos)))
 
-; This is the slow part. It would probably be better to keep the board in a 1-dimensional
-; list. We could map over it quickly without having to convert it to a hash.
 (defn step [cells]
   (into {} (for [[loc nearby] (group-by first (mapcat neighbors-with-player cells))
                  :let [names (set/map-invert
