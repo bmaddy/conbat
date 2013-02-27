@@ -11,6 +11,8 @@ A multiplayer Conway's Game of Life battle.
 
 ## Notes
 
+This started as a "build a game in 2.5 hours" competition at our local javascript user group. It's not exactly production quality code.
+
 * The performance totally sucks right now. The problem is in the step function. Perhaps I'll feel ambitious again someday and fix it. Patches welcome ;)
 * I was having problems getting the browser repl working so I disabled it.
 
