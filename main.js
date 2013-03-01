@@ -13638,11 +13638,9 @@ conbat.node.handler = function(a, b) {
 };
 conbat.node.start = function() {
   var a = function() {
-    conbat.node.http.createServer(conbat.node.handler).listen(function() {
-      var a = process.env.PORT;
-      return cljs.core.truth_(a) ? a : 1337
-    }());
-    cljs.core.println.call(null, "Server running at http://127.0.0.1:1337/");
+    var a = conbat.node.http.createServer(conbat.node.handler), b = process.env.PORT;
+    a.listen(cljs.core.truth_(b) ? b : 1337);
+    cljs.core.println.call(null, "Server running on port ", b);
     return conbat.node.game_loop.call(null, conbat.node.state)
   }, b = function(b) {
     var d = null;
