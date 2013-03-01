@@ -1,2 +1,2 @@
-web: lein cljsbuild once; node main.js
+web: node main.js
 
