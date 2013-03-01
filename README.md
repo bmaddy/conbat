@@ -9,6 +9,10 @@ A multiplayer Conway's Game of Life battle.
 * $ node main.js
 * $ open http://localhost:1337
 
+## Development
+
+* The compiled main.js and ui.js are checked in so that we can push this to Heroku and have it run as a node.js app.
+
 ## Notes
 
 This started as a "build a game in 2.5 hours" competition at our local javascript user group. It's not exactly production quality code.
