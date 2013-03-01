@@ -125,9 +125,10 @@
       (.end res "Not Found\n"))))
 
 (defn start [& _]
-  (let [server (.createServer http handler)]
-    (.listen server 1337)
-    (println "Server running at http://127.0.0.1:1337/")
+  (let [server (.createServer http handler)
+        port (-> js/process .-env .-PORT)]
+    (.listen server (or port 1337))
+    (println "Server running on port " port)
     (game-loop state)))
 
 
