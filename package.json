@@ -4,7 +4,7 @@
   "dependencies": {
   },
   "engines": {
-    "node": "0.8.x",
-    "npm": "1.2.x"
+    "node": "6.11.x",
+    "npm": "3.10.x"
   }
 }
